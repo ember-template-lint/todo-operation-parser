@@ -70,7 +70,7 @@ pub fn operation_from_string<'a>(s: &'a str) -> TodoOperation<'a> {
         operation: match vec[0] {
             "add" => OperationType::Add,
             "remove" => OperationType::Remove,
-            _ => panic!("expected valid operation type"),
+            _ => panic!("expected valid operation type, got {}", vec[0]),
         },
         todo: TodoData {
             engine: vec[1],
@@ -94,12 +94,24 @@ pub fn operation_from_string<'a>(s: &'a str) -> TodoOperation<'a> {
     }
 }
 
+const GIT_CONFLICT_START: &str = "<<<<<<<";
+const GIT_CONFLICT_MIDDLE: &str = "=======";
+const GIT_CONFLICT_END: &str = ">>>>>>>";
+
 pub fn parse_operations(s: &str) -> Vec<TodoOperation> {
     let mut operations: Vec<TodoOperation> = Vec::new();
 
     for line in s.lines() {
-        let operation = operation_from_string(line);
-        operations.push(operation);
+        match &line[0..7] {
+            GIT_CONFLICT_START => continue,
+            GIT_CONFLICT_MIDDLE => continue,
+            GIT_CONFLICT_END => continue,
+            _ => {
+                let operation = operation_from_string(line);
+                operations.push(operation);
+            },
+        }
+
     }
 
     operations
@@ -139,7 +151,7 @@ mod tests {
     }
 
     #[test]
-    fn it_can_read_todo_operation_from_string() {
+    fn it_can_read_todo_operation_back_from_string() {
         let todo = build_simple_operation();
         let s = todo.to_operation_string();
 
@@ -162,4 +174,17 @@ mod tests {
 
         assert_eq!(parse_operations(&s), operations);
     }
+
+    #[test]
+    fn it_can_handle_git_conflict_markers() {
+        let todo_str = build_simple_operation().to_operation_string();
+        let theirs_start = "<<<<<<< HEAD";
+        let ours_start = "=======";
+        let ours_end = ">>>>>>> whatever";
+
+        let conflicted = format!("{}\n{theirs_start}\n{}\n{ours_start}\n{}\n{ours_end}", todo_str, todo_str, todo_str, theirs_start = theirs_start, ours_start = ours_start, ours_end = ours_end);
+
+        assert_eq!(parse_operations(&conflicted), [build_simple_operation(), build_simple_operation(), build_simple_operation()]);
+    }
+
 }
