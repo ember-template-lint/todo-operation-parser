@@ -43,22 +43,22 @@ pub trait ToOperation {
 impl<'a> ToOperation for TodoOperation<'a> {
     fn to_operation_string(&self) -> String {
         format!(
-            "{operation}\0{engine}\0{rule_id}\0{file_path}\0{start_line}\0{start_column}\0{end_line}\0{end_column}\0{source}\0{created_date}\0{warn_date}\0{error_date}",
-            operation = match self.operation {
+            "{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
+            match self.operation {
                 OperationType::Add => "add",
                 OperationType::Remove => "remove",
             },
-            engine = self.todo.engine,
-            rule_id = self.todo.rule_id,
-            file_path = self.todo.file_path,
-            start_line = self.todo.range.start.line,
-            start_column = self.todo.range.start.column,
-            end_line = self.todo.range.end.line,
-            end_column = self.todo.range.end.column,
-            source = self.todo.source,
-            created_date = self.todo.created_date,
-            warn_date = self.todo.warn_date,
-            error_date = self.todo.error_date,
+            self.todo.engine,
+            self.todo.rule_id,
+            self.todo.file_path,
+            self.todo.range.start.line,
+            self.todo.range.start.column,
+            self.todo.range.end.line,
+            self.todo.range.end.column,
+            self.todo.source,
+            self.todo.created_date,
+            self.todo.warn_date,
+            self.todo.error_date,
             )
     }
 }
@@ -182,7 +182,7 @@ mod tests {
         let ours_start = "=======";
         let ours_end = ">>>>>>> whatever";
 
-        let conflicted = format!("{}\n{theirs_start}\n{}\n{ours_start}\n{}\n{ours_end}", todo_str, todo_str, todo_str, theirs_start = theirs_start, ours_start = ours_start, ours_end = ours_end);
+        let conflicted = format!("{}\n{}\n{}\n{}\n{}\n{}", todo_str, theirs_start, todo_str, ours_start, todo_str, ours_end);
 
         assert_eq!(parse_operations(&conflicted), [build_simple_operation(), build_simple_operation(), build_simple_operation()]);
     }
