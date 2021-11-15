@@ -59,7 +59,7 @@ impl<'a> ToOperation for TodoOperation<'a> {
             self.todo.created_date,
             self.todo.warn_date,
             self.todo.error_date,
-            )
+        )
     }
 }
 
@@ -109,9 +109,8 @@ pub fn parse_operations(s: &str) -> Vec<TodoOperation> {
             _ => {
                 let operation = operation_from_string(line);
                 operations.push(operation);
-            },
+            }
         }
-
     }
 
     operations
@@ -182,9 +181,18 @@ mod tests {
         let ours_start = "=======";
         let ours_end = ">>>>>>> whatever";
 
-        let conflicted = format!("{}\n{}\n{}\n{}\n{}\n{}", todo_str, theirs_start, todo_str, ours_start, todo_str, ours_end);
+        let conflicted = format!(
+            "{}\n{}\n{}\n{}\n{}\n{}",
+            todo_str, theirs_start, todo_str, ours_start, todo_str, ours_end
+        );
 
-        assert_eq!(parse_operations(&conflicted), [build_simple_operation(), build_simple_operation(), build_simple_operation()]);
+        assert_eq!(
+            parse_operations(&conflicted),
+            [
+                build_simple_operation(),
+                build_simple_operation(),
+                build_simple_operation()
+            ]
+        );
     }
-
 }
