@@ -12,12 +12,12 @@ pub struct Range {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct TodoData<'a> {
-    pub engine: &'a str,
-    pub rule_id: &'a str,
-    pub file_path: &'a str,
+pub struct TodoData {
+    pub engine: String,
+    pub rule_id: String,
+    pub file_path: String,
     pub range: Range,
-    pub source: &'a str,
+    pub source: String,
     pub created_date: i64,
     pub warn_date: i64,
     pub error_date: i64,
@@ -31,16 +31,16 @@ pub enum OperationType {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct TodoOperation<'a> {
+pub struct TodoOperation {
     operation: OperationType,
-    todo: TodoData<'a>,
+    todo: TodoData,
 }
 
 pub trait ToOperation {
     fn to_operation_string(&self) -> String;
 }
 
-impl<'a> ToOperation for TodoOperation<'a> {
+impl ToOperation for TodoOperation {
     fn to_operation_string(&self) -> String {
         format!(
             "{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
@@ -63,7 +63,7 @@ impl<'a> ToOperation for TodoOperation<'a> {
     }
 }
 
-pub fn operation_from_string<'a>(s: &'a str) -> TodoOperation<'a> {
+pub fn operation_from_string(s: String) -> TodoOperation {
     let vec: Vec<&str> = s.split('\0').collect();
 
     TodoOperation {
@@ -73,9 +73,9 @@ pub fn operation_from_string<'a>(s: &'a str) -> TodoOperation<'a> {
             _ => panic!("expected valid operation type, got {}", vec[0]),
         },
         todo: TodoData {
-            engine: vec[1],
-            rule_id: vec[2],
-            file_path: vec[3],
+            engine: vec[1].to_string(),
+            rule_id: vec[2].to_string(),
+            file_path: vec[3].to_string(),
             range: Range {
                 start: Position {
                     line: i32::from_str_radix(vec[4], 10).expect("valid range.start.line"),
@@ -86,7 +86,7 @@ pub fn operation_from_string<'a>(s: &'a str) -> TodoOperation<'a> {
                     column: i32::from_str_radix(vec[7], 10).expect("valid range.end.column"),
                 },
             },
-            source: vec[8],
+            source: vec[8].to_string(),
             created_date: i64::from_str_radix(vec[9], 10).expect("valid created_date"),
             warn_date: i64::from_str_radix(vec[10], 10).expect("valid warn_date"),
             error_date: i64::from_str_radix(vec[11], 10).expect("valid error_data"),
@@ -107,7 +107,7 @@ pub fn parse_operations(s: &str) -> Vec<TodoOperation> {
             GIT_CONFLICT_MIDDLE => continue,
             GIT_CONFLICT_END => continue,
             _ => {
-                let operation = operation_from_string(line);
+                let operation = operation_from_string(line.to_string());
                 operations.push(operation);
             }
         }
@@ -120,18 +120,18 @@ pub fn parse_operations(s: &str) -> Vec<TodoOperation> {
 mod tests {
     use super::*;
 
-    fn build_simple_operation() -> TodoOperation<'static> {
+    fn build_simple_operation() -> TodoOperation {
         TodoOperation {
             operation: OperationType::Add,
             todo: TodoData {
-                engine: "ember-template-lint",
-                file_path: "some/path/here",
-                rule_id: "bare-strings",
+                engine: String::from("ember-template-lint"),
+                file_path: String::from("some/path/here"),
+                rule_id: String::from("bare-strings"),
                 range: Range {
                     start: Position { line: 0, column: 0 },
                     end: Position { line: 0, column: 5 },
                 },
-                source: "hello",
+                source: String::from("hello"),
                 created_date: 1000, // TODO: make this more reasonable
                 warn_date: 0,
                 error_date: 0,
@@ -154,7 +154,7 @@ mod tests {
         let todo = build_simple_operation();
         let s = todo.to_operation_string();
 
-        assert_eq!(operation_from_string(&s), todo);
+        assert_eq!(operation_from_string(s), todo);
     }
 
     #[test]
