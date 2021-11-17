@@ -30,6 +30,25 @@ pub enum OperationType {
     // TODO: add update
 }
 
+impl From<&str> for OperationType {
+    fn from(i: &str) -> Self {
+        match i {
+            "add" => OperationType::Add,
+            "remove" => OperationType::Remove,
+            _ => unimplemented!("unknown operation type"),
+        }
+    }
+}
+impl From<String> for OperationType {
+    fn from(i: String) -> Self {
+        match i.as_str() {
+            "add" => OperationType::Add,
+            "remove" => OperationType::Remove,
+            _ => unimplemented!("unknown operation type"),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct TodoOperation {
     operation: OperationType,
@@ -98,6 +117,23 @@ const GIT_CONFLICT_START: &str = "<<<<<<<";
 const GIT_CONFLICT_MIDDLE: &str = "=======";
 const GIT_CONFLICT_END: &str = ">>>>>>>";
 
+extern crate nom;
+use nom::{
+  IResult,
+  bytes::complete::{tag, take_while_m_n},
+  combinator::map_res,
+  sequence::tuple
+};
+
+fn operation(input: &str) -> Res<&str, OperationType> {
+    context(
+        "operation type",
+        alt((tag("add"), tag("remove"))),
+    )(input)
+    .map(|(next_input, res)|
+            
+}
+
 pub fn parse_operations(s: &str) -> Vec<TodoOperation> {
     let mut operations: Vec<TodoOperation> = Vec::new();
 
@@ -137,6 +173,15 @@ mod tests {
                 error_date: 0,
             },
         }
+    }
+
+    #[test]
+    fn it_can_convert_string_operation_to_operation_type() {
+        assert_eq!(OperationType::from("add"), OperationType::Add);
+        assert_eq!(OperationType::from("remove"), OperationType::Remove);
+
+        assert_eq!(OperationType::from("add".to_string()), OperationType::Add);
+        assert_eq!(OperationType::from("remove".to_string()), OperationType::Remove);
     }
 
     #[test]
