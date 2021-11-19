@@ -62,9 +62,12 @@ impl Display for TodoOperation {
     }
 }
 
-impl From<&str> for TodoOperation {
-    fn from(s: &str) -> Self {
-        let vec: Vec<&str> = s.split('\0').collect();
+impl<S> From<S> for TodoOperation
+where
+    S: AsRef<str>,
+{
+    fn from(s: S) -> Self {
+        let vec: Vec<&str> = s.as_ref().split('\0').collect();
 
         TodoOperation {
             operation: match vec[0] {
@@ -144,7 +147,7 @@ mod tests {
         let todo = build_simple_operation();
 
         assert_eq!(
-            &todo.to_string(),
+            todo.to_string(),
             "add\0ember-template-lint\0bare-strings\0some/path/here\00\00\00\05\0hello\01000\00\00"
         );
     }
@@ -154,7 +157,7 @@ mod tests {
         let todo = build_simple_operation();
         let s = todo.to_string();
 
-        assert_eq!(TodoOperation::from(s.as_str()), todo);
+        assert_eq!(TodoOperation::from(&s), todo);
     }
 
     #[test]
