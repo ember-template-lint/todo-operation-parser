@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 // from https://github.com/ember-template-lint/ember-template-lint-todo-utils/blob/6ad4d277c84a74ee0f07341734f7cdbaad21463d/src/types/todos.ts#L70-L81
 #[derive(Debug, PartialEq)]
 pub struct Position {
@@ -36,13 +38,10 @@ pub struct TodoOperation {
     todo: TodoData,
 }
 
-pub trait ToOperation {
-    fn to_operation_string(&self) -> String;
-}
-
-impl ToOperation for TodoOperation {
-    fn to_operation_string(&self) -> String {
-        format!(
+impl Display for TodoOperation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
             "{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
             match self.operation {
                 OperationType::Add => "add",
@@ -63,34 +62,36 @@ impl ToOperation for TodoOperation {
     }
 }
 
-pub fn operation_from_string(s: String) -> TodoOperation {
-    let vec: Vec<&str> = s.split('\0').collect();
+impl From<&str> for TodoOperation {
+    fn from(s: &str) -> Self {
+        let vec: Vec<&str> = s.split('\0').collect();
 
-    TodoOperation {
-        operation: match vec[0] {
-            "add" => OperationType::Add,
-            "remove" => OperationType::Remove,
-            _ => panic!("expected valid operation type, got {}", vec[0]),
-        },
-        todo: TodoData {
-            engine: vec[1].to_string(),
-            rule_id: vec[2].to_string(),
-            file_path: vec[3].to_string(),
-            range: Range {
-                start: Position {
-                    line: i32::from_str_radix(vec[4], 10).expect("valid range.start.line"),
-                    column: i32::from_str_radix(vec[5], 10).expect("valid range.start.column"),
-                },
-                end: Position {
-                    line: i32::from_str_radix(vec[6], 10).expect("valid range.end.line"),
-                    column: i32::from_str_radix(vec[7], 10).expect("valid range.end.column"),
-                },
+        TodoOperation {
+            operation: match vec[0] {
+                "add" => OperationType::Add,
+                "remove" => OperationType::Remove,
+                _ => panic!("expected valid operation type, got {}", vec[0]),
             },
-            source: vec[8].to_string(),
-            created_date: i64::from_str_radix(vec[9], 10).expect("valid created_date"),
-            warn_date: i64::from_str_radix(vec[10], 10).expect("valid warn_date"),
-            error_date: i64::from_str_radix(vec[11], 10).expect("valid error_data"),
-        },
+            todo: TodoData {
+                engine: vec[1].to_string(),
+                rule_id: vec[2].to_string(),
+                file_path: vec[3].to_string(),
+                range: Range {
+                    start: Position {
+                        line: vec[4].parse::<i32>().expect("valid range.start.line"),
+                        column: vec[5].parse::<i32>().expect("valid range.start.column"),
+                    },
+                    end: Position {
+                        line: vec[6].parse::<i32>().expect("valid range.end.line"),
+                        column: vec[7].parse::<i32>().expect("valid range.end.column"),
+                    },
+                },
+                source: vec[8].to_string(),
+                created_date: vec[9].parse::<i64>().expect("valid created_date"),
+                warn_date: vec[10].parse::<i64>().expect("valid warn_date"),
+                error_date: vec[11].parse::<i64>().expect("valid error_data"),
+            },
+        }
     }
 }
 
@@ -107,8 +108,7 @@ pub fn parse_operations(s: &str) -> Vec<TodoOperation> {
             GIT_CONFLICT_MIDDLE => continue,
             GIT_CONFLICT_END => continue,
             _ => {
-                let operation = operation_from_string(line.to_string());
-                operations.push(operation);
+                operations.push(line.into());
             }
         }
     }
@@ -144,7 +144,7 @@ mod tests {
         let todo = build_simple_operation();
 
         assert_eq!(
-            todo.to_operation_string(),
+            &todo.to_string(),
             "add\0ember-template-lint\0bare-strings\0some/path/here\00\00\00\05\0hello\01000\00\00"
         );
     }
@@ -152,9 +152,9 @@ mod tests {
     #[test]
     fn it_can_read_todo_operation_back_from_string() {
         let todo = build_simple_operation();
-        let s = todo.to_operation_string();
+        let s = todo.to_string();
 
-        assert_eq!(operation_from_string(s), todo);
+        assert_eq!(TodoOperation::from(s.as_str()), todo);
     }
 
     #[test]
@@ -167,7 +167,7 @@ mod tests {
         ];
         let s = operations
             .iter()
-            .map(|todo| todo.to_operation_string())
+            .map(|todo| todo.to_string())
             .collect::<Vec<String>>()
             .join("\n");
 
@@ -176,7 +176,7 @@ mod tests {
 
     #[test]
     fn it_can_handle_git_conflict_markers() {
-        let todo_str = build_simple_operation().to_operation_string();
+        let todo_str = build_simple_operation().to_string();
         let theirs_start = "<<<<<<< HEAD";
         let ours_start = "=======";
         let ours_end = ">>>>>>> whatever";
