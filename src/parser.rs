@@ -1,8 +1,44 @@
+use crate::{TodoOperation, TodoData, OperationType, Range, Position};
+
+impl<S> From<S> for TodoOperation
+where
+    S: AsRef<str>,
+{
+    fn from(s: S) -> Self {
+        let vec: Vec<&str> = s.as_ref().split('\0').collect();
+
+        TodoOperation {
+            operation: match vec[0] {
+                "add" => OperationType::Add,
+                "remove" => OperationType::Remove,
+                _ => panic!("expected valid operation type, got {}", vec[0]),
+            },
+            todo: TodoData {
+                engine: vec[1].to_string(),
+                rule_id: vec[2].to_string(),
+                file_path: vec[3].to_string(),
+                range: Range {
+                    start: Position {
+                        line: vec[4].parse::<i32>().expect("valid range.start.line"),
+                        column: vec[5].parse::<i32>().expect("valid range.start.column"),
+                    },
+                    end: Position {
+                        line: vec[6].parse::<i32>().expect("valid range.end.line"),
+                        column: vec[7].parse::<i32>().expect("valid range.end.column"),
+                    },
+                },
+                source: vec[8].to_string(),
+                created_date: vec[9].parse::<i64>().expect("valid created_date"),
+                warn_date: vec[10].parse::<i64>().expect("valid warn_date"),
+                error_date: vec[11].parse::<i64>().expect("valid error_data"),
+            },
+        }
+    }
+}
+
 const GIT_CONFLICT_START: &str = "<<<<<<<";
 const GIT_CONFLICT_MIDDLE: &str = "=======";
 const GIT_CONFLICT_END: &str = ">>>>>>>";
-
-use crate::TodoOperation;
 
 pub fn parse_operations(s: &str) -> Vec<TodoOperation> {
     let mut operations: Vec<TodoOperation> = Vec::new();
