@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+pub mod parser;
+
 // from https://github.com/ember-template-lint/ember-template-lint-todo-utils/blob/6ad4d277c84a74ee0f07341734f7cdbaad21463d/src/types/todos.ts#L70-L81
 #[derive(Debug, PartialEq)]
 pub struct Position {
@@ -123,7 +125,7 @@ pub fn parse_operations(s: &str) -> Vec<TodoOperation> {
 mod tests {
     use super::*;
 
-    fn build_simple_operation() -> TodoOperation {
+    pub fn build_simple_operation() -> TodoOperation {
         TodoOperation {
             operation: OperationType::Add,
             todo: TodoData {
@@ -149,53 +151,6 @@ mod tests {
         assert_eq!(
             todo.to_string(),
             "add\0ember-template-lint\0bare-strings\0some/path/here\00\00\00\05\0hello\01000\00\00"
-        );
-    }
-
-    #[test]
-    fn it_can_read_todo_operation_back_from_string() {
-        let todo = build_simple_operation();
-        let s = todo.to_string();
-
-        assert_eq!(TodoOperation::from(&s), todo);
-    }
-
-    #[test]
-    fn it_can_parse_many_operations_from_string() {
-        let operations = [
-            build_simple_operation(),
-            build_simple_operation(),
-            build_simple_operation(),
-            build_simple_operation(),
-        ];
-        let s = operations
-            .iter()
-            .map(|todo| todo.to_string())
-            .collect::<Vec<String>>()
-            .join("\n");
-
-        assert_eq!(parse_operations(&s), operations);
-    }
-
-    #[test]
-    fn it_can_handle_git_conflict_markers() {
-        let todo_str = build_simple_operation().to_string();
-        let theirs_start = "<<<<<<< HEAD";
-        let ours_start = "=======";
-        let ours_end = ">>>>>>> whatever";
-
-        let conflicted = format!(
-            "{}\n{}\n{}\n{}\n{}\n{}",
-            todo_str, theirs_start, todo_str, ours_start, todo_str, ours_end
-        );
-
-        assert_eq!(
-            parse_operations(&conflicted),
-            [
-                build_simple_operation(),
-                build_simple_operation(),
-                build_simple_operation()
-            ]
         );
     }
 }
